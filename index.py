@@ -11,28 +11,33 @@ MAX_SIZE = 10
 # ==================
 
 
-def getIndexOfCoincidence(line):
-    cipherFrequency = {}
+def getLettersFrequency(line):
+    letterFrequency = {}
     cipherLength = len(line)
 
     for letter in line:
         # https://realpython.com/python-counter/
-        cipherFrequency[letter] = cipherFrequency.get(letter, 0) + 1
+        letterFrequency[letter] = letterFrequency.get(letter, 0) + 1
 
-    cipherFrequency = dict(
-        sorted(cipherFrequency.items(), key=lambda item: item[1], reverse=True)
+    letterFrequency = dict(
+        sorted(letterFrequency.items(), key=lambda item: item[1], reverse=True)
     )
 
-    for key in cipherFrequency:
-        cipherFrequency[key] = cipherFrequency[key] / cipherLength
+    for letter in letterFrequency:
+        letterFrequency[letter] = letterFrequency[letter] / cipherLength
 
-    return functools.reduce(lambda x, y: x + (y * y), cipherFrequency.values(), 0)
+    return letterFrequency
+
+
+def getIndexOfCoincidence(frequencies):
+    return functools.reduce(lambda x, y: x + (y * y), frequencies.values(), 0)
 
 
 print(
     f"Margem de Erro de {ERROR_MARGIN} = ({0.065 - ERROR_MARGIN}, {0.065 + ERROR_MARGIN})"
 )
-isSizeFound = False
+keySize = 0
+cipherParts = []
 for length in range(1, MAX_SIZE + 1):
     cipherParts = [[] for _ in range(length)]
     txt_file = open(file_name)
@@ -43,15 +48,28 @@ for length in range(1, MAX_SIZE + 1):
             idx = idx + 1
     txt_file.close()
     avgIndex = (
-        functools.reduce(lambda x, y: x + getIndexOfCoincidence(y), cipherParts, 0)
+        functools.reduce(
+            lambda x, y: x + getIndexOfCoincidence(getLettersFrequency(y)),
+            cipherParts,
+            0,
+        )
         / length
     )
 
     if avgIndex > 0.065 - ERROR_MARGIN and avgIndex < 0.065 + ERROR_MARGIN:
-        isSizeFound = True
+        keySize = length
         print(f"O tamanho da chave é provavelmente {length} - {avgIndex}")
+        break
 
-if not isSizeFound:
+if keySize == 0:
     print(
         f"A média de nenhum grupo ficou entre 0.065 +- {ERROR_MARGIN}(Margem de Erro), considere aumentar a Margem de Erro"
     )
+else:
+    for i in range(0, keySize):
+        print(
+            f"Top 5 most frequent in Cipher Part {i+1} [{''.join(cipherParts[i][:length])}...]"
+        )
+        cipherFrequency = getLettersFrequency(cipherParts[i])
+        for letter in list(cipherFrequency.keys())[:5]:
+            print(f"{letter} - {(cipherFrequency[letter]*100):.2f}%")
