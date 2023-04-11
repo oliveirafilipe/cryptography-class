@@ -6,7 +6,9 @@ import functools
 file_name = "./samples/portuguese.txt"
 
 # ==================
-ERROR_MARGIN = 0.015  # Units
+ERROR_MARGIN = 0.002  # Units
+ENGLISH_IOC = 0.067
+PORTUGUESE_IOC = 0.075
 MAX_SIZE = 10
 # ==================
 
@@ -33,10 +35,15 @@ def getIndexOfCoincidence(frequencies):
     return functools.reduce(lambda x, y: x + (y * y), frequencies.values(), 0)
 
 
+def getKeyLetter(offset, letter):
+    return chr(abs(ord(offset) - ord(letter)) + ord("a"))
+
+
 print(
     f"Margem de Erro de {ERROR_MARGIN} = ({0.065 - ERROR_MARGIN}, {0.065 + ERROR_MARGIN})"
 )
 keySize = 0
+language = ""
 cipherParts = []
 for length in range(1, MAX_SIZE + 1):
     cipherParts = [[] for _ in range(length)]
@@ -55,10 +62,16 @@ for length in range(1, MAX_SIZE + 1):
         )
         / length
     )
-
-    if avgIndex > 0.065 - ERROR_MARGIN and avgIndex < 0.065 + ERROR_MARGIN:
+    if avgIndex > ENGLISH_IOC - ERROR_MARGIN and avgIndex < ENGLISH_IOC + ERROR_MARGIN:
         keySize = length
-        print(f"O tamanho da chave é provavelmente {length} - {avgIndex}")
+        language = "en"
+        break
+    if (
+        avgIndex > PORTUGUESE_IOC - ERROR_MARGIN
+        and avgIndex < PORTUGUESE_IOC + ERROR_MARGIN
+    ):
+        keySize = length
+        language = "pt"
         break
 
 if keySize == 0:
@@ -66,10 +79,25 @@ if keySize == 0:
         f"A média de nenhum grupo ficou entre 0.065 +- {ERROR_MARGIN}(Margem de Erro), considere aumentar a Margem de Erro"
     )
 else:
+    print(f"O tamanho da chave é provavelmente {length} - {avgIndex}")
+    key = []
+    offset = "a" if language == "pt" else "e"
+    print(f"O texto está em { 'Português' if language == 'pt' else 'Inglês'}")
+    print("\nPossíveis letras para cada posição da chave:\n   ", end="")
     for i in range(0, keySize):
-        print(
-            f"Top 5 most frequent in Cipher Part {i+1} [{''.join(cipherParts[i][:length])}...]"
-        )
-        cipherFrequency = getLettersFrequency(cipherParts[i])
-        for letter in list(cipherFrequency.keys())[:5]:
-            print(f"{letter} - {(cipherFrequency[letter]*100):.2f}%")
+        letterFrequency = getLettersFrequency(cipherParts[i])
+        listLetterFrequency = [
+            list(letterFrequency.keys()),
+            list(letterFrequency.values()),
+        ]
+        # ========================
+        print(f"({getKeyLetter(offset, listLetterFrequency[0][0])}", end="")
+        if listLetterFrequency[1][0] - listLetterFrequency[1][1] < 0.025:
+            print(
+                f"|{getKeyLetter(offset, listLetterFrequency[0][1])}",
+                end="",
+            )
+        print(")/", end="")
+        # ========================
+        key.append(getKeyLetter(offset, listLetterFrequency[0][0]))
+    print(f"\nChave Assumida: {''.join(key)}")
