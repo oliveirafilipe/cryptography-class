@@ -3,13 +3,16 @@ import functools
 
 # https://www.youtube.com/watch?v=-v6AuD6U2lk
 # https://www.digitalocean.com/community/tutorials/read-large-text-files-in-python
-file_name = "./samples/portuguese.txt"
+file_name = "./samples/english.txt"
+cleantext = ""
 
 # ==================
 ERROR_MARGIN = 0.002  # Units
 ENGLISH_IOC = 0.067
 PORTUGUESE_IOC = 0.075
 MAX_SIZE = 10
+
+
 # ==================
 
 
@@ -55,20 +58,20 @@ for length in range(1, MAX_SIZE + 1):
             idx = idx + 1
     txt_file.close()
     avgIndex = (
-        functools.reduce(
-            lambda x, y: x + getIndexOfCoincidence(getLettersFrequency(y)),
-            cipherParts,
-            0,
-        )
-        / length
+            functools.reduce(
+                lambda x, y: x + getIndexOfCoincidence(getLettersFrequency(y)),
+                cipherParts,
+                0,
+            )
+            / length
     )
     if avgIndex > ENGLISH_IOC - ERROR_MARGIN and avgIndex < ENGLISH_IOC + ERROR_MARGIN:
         keySize = length
         language = "en"
         break
     if (
-        avgIndex > PORTUGUESE_IOC - ERROR_MARGIN
-        and avgIndex < PORTUGUESE_IOC + ERROR_MARGIN
+            avgIndex > PORTUGUESE_IOC - ERROR_MARGIN
+            and avgIndex < PORTUGUESE_IOC + ERROR_MARGIN
     ):
         keySize = length
         language = "pt"
@@ -82,7 +85,7 @@ else:
     print(f"O tamanho da chave é provavelmente {length} - {avgIndex}")
     key = []
     offset = "a" if language == "pt" else "e"
-    print(f"O texto está em { 'Português' if language == 'pt' else 'Inglês'}")
+    print(f"O texto está em {'Português' if language == 'pt' else 'Inglês'}")
     print("\nPossíveis letras para cada posição da chave:\n   ", end="")
     for i in range(0, keySize):
         letterFrequency = getLettersFrequency(cipherParts[i])
@@ -101,3 +104,16 @@ else:
         # ========================
         key.append(getKeyLetter(offset, listLetterFrequency[0][0]))
     print(f"\nChave Assumida: {''.join(key)}")
+
+txt_file = open(file_name)
+count = 0
+
+for line in txt_file:
+    for letter in line:
+        char = letter
+        pos = ord(key[count % len(key)].lower()) - 97
+        cleantext += chr((ord(char) - pos - 97) % 26 + 97)
+        count += 1
+
+with open("./samples/decipher.txt", 'w') as ret:
+    ret.write(cleantext)
